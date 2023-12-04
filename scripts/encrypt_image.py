@@ -8,6 +8,7 @@ from modules.shared import opts
 from scripts.core.core import encrypt_image,get_sha256,dencrypt_image,dencrypt_image_v2,encrypt_image_v2
 from PIL import PngImagePlugin,_util,ImagePalette
 from PIL import Image as PILImage
+from PIL.PngImagePlugin import PngInfo
 from io import BytesIO
 from typing import Optional
 from fastapi import FastAPI
@@ -151,9 +152,15 @@ def on_app_started(demo: Optional[Blocks], app: FastAPI):
             if file_path[file_path.rfind('.'):].lower() in ['.png','.jpg','.jpeg','.webp','.abcd']:
                 image = PILImage.open(file_path)
                 pnginfo = image.info or {}
+                metadata = PngInfo() 
+                parrams = f'{pnginfo["parameters"]}'
+                ecpt = f'{pnginfo["Encrypt"]}'
+                metadata.add_text("parameters", parrams)
+                metadata.add_text("Encrypt", ecpt)
                 if 'Encrypt' in pnginfo:
                     buffered = BytesIO()
-                    image.save(buffered, format=PngImagePlugin.PngImageFile.format)
+                    image.save(buffered, format=PngImagePlugin.PngImageFile.format, pnginfo=metadata)
+                    #image.save(buffered, format=PngImagePlugin.PngImageFile.format, pnginfo=pnginfo)
                     decrypted_image_data = buffered.getvalue()
                     response: Response = Response(content=decrypted_image_data, media_type="image/png")
                     return response
